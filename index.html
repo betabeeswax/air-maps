@@ -2,7 +2,7 @@
 <html lang="en" class="h-full w-full bg-slate-900">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AIR Maps - GPS & Turn-by-Turn Route Planner</title>
     
     <!-- Tailwind CSS -->
@@ -50,6 +50,13 @@
             border-color: rgba(56, 189, 248, 0.5);
         }
 
+        /* Prevent iOS/Android zoom on focus by enforcing >= 16px font size on mobile */
+        @media screen and (max-width: 768px) {
+            input[type="text"], select {
+                font-size: 16px !important;
+            }
+        }
+
         /* Animated pulsing GPS dot */
         .gps-user-marker {
             width: 22px;
@@ -75,30 +82,15 @@
         }
 
         @keyframes gps-pulse {
-            0% {
-                transform: scale(0.5);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(2.4);
-                opacity: 0;
-            }
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
         }
 
         /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(100, 116, 139, 0.5);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(148, 163, 184, 0.8);
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.5); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.8); }
 
         /* Override Leaflet Popup styling */
         .leaflet-popup-content-wrapper {
@@ -108,15 +100,9 @@
             border-radius: 12px !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
         }
-        .leaflet-popup-tip {
-            background: #0f172a !important;
-        }
-        .leaflet-container a.leaflet-popup-close-button {
-            color: #94a3b8 !important;
-            padding: 6px 8px !important;
-        }
+        .leaflet-popup-tip { background: #0f172a !important; }
+        .leaflet-container a.leaflet-popup-close-button { color: #94a3b8 !important; padding: 6px 8px !important; }
 
-        /* Active map mode button indicator */
         .map-style-active {
             border-color: #38bdf8 !important;
             background: rgba(14, 165, 233, 0.25) !important;
@@ -128,30 +114,46 @@
 
     <header class="h-14 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-20 backdrop-blur-md">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20">
-                <i class="fa-solid fa-route text-white text-base"></i>
+            <!-- Refined Logo Design -->
+            <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-transparent shadow-md">
+                <svg viewBox="0 0 512 512" class="w-full h-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#38bdf8"/>
+                            <stop offset="50%" stop-color="#2563eb"/>
+                            <stop offset="100%" stop-color="#7c3aed"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="512" height="512" rx="112" fill="url(#brandGrad)"/>
+                    <path d="M256 110C185.31 110 128 167.31 128 238C128 335.5 256 422 256 422C256 422 384 335.5 384 238C384 167.31 326.69 110 256 110Z" fill="white" opacity="0.18"/>
+                    <circle cx="256" cy="226" r="64" fill="white"/>
+                    <circle cx="256" cy="226" r="26" fill="#2563eb"/>
+                </svg>
             </div>
             <div>
                 <h1 class="text-base md:text-lg font-bold bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
-                    AIR Maps <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">GPS & Route Planner</span>
+                    AIR Maps <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hidden sm:inline">GPS Navigator</span>
                 </h1>
             </div>
         </div>
 
-        <!-- Live Status Indicators -->
-        <div class="flex items-center gap-2 md:gap-4 text-xs font-medium">
-            <button id="btn-toggle-traffic" class="glass-button px-3 py-1.5 rounded-lg text-slate-200 flex items-center gap-2 hover:border-amber-400 transition-colors" title="Toggle Live Traffic Layer">
+        <!-- Live Status Indicators & Controls -->
+        <div class="flex items-center gap-2 text-xs font-medium">
+            <button id="btn-toggle-traffic" class="glass-button px-3 py-1.5 rounded-lg text-slate-200 hidden sm:flex items-center gap-2 hover:border-amber-400 transition-colors" title="Toggle Live Traffic Layer">
                 <i class="fa-solid fa-car-side text-amber-400" id="traffic-icon"></i>
-                <span id="traffic-status-text" class="hidden sm:inline">Traffic Layer</span>
+                <span>Traffic</span>
             </button>
             <button id="btn-toggle-gps" class="glass-button px-3 py-1.5 rounded-lg text-slate-200 flex items-center gap-2 hover:border-cyan-400 transition-colors">
                 <i class="fa-solid fa-crosshairs text-slate-400" id="gps-icon"></i>
                 <span id="gps-status-text" class="hidden sm:inline">GPS Off</span>
             </button>
-            <div id="live-coords" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300">
-                <i class="fa-solid fa-location-dot text-cyan-400"></i>
-                <span id="coords-val">44.1501° N, 81.0261° W</span>
-            </div>
+            
+            <!-- Hide UI Toggle Button -->
+            <button id="btn-toggle-hide-ui" class="glass-button px-3 py-1.5 rounded-lg text-cyan-300 flex items-center gap-1.5 hover:border-cyan-400 transition-colors" title="Hide/Show UI Overlay">
+                <i class="fa-solid fa-eye-slash" id="hide-ui-icon"></i>
+                <span id="hide-ui-text" class="hidden sm:inline">Hide UI</span>
+            </button>
+
             <button id="btn-open-settings-hdr" class="glass-button px-3 py-1.5 rounded-lg text-slate-200 flex items-center gap-1.5 hover:border-amber-400 transition-colors" title="Settings">
                 <i class="fa-solid fa-gear text-amber-400"></i>
                 <span class="hidden sm:inline">Settings</span>
@@ -164,8 +166,8 @@
         <!-- Interactive Map Canvas -->
         <div id="map"></div>
 
-        <!-- Floating Map Mode & Settings Selector Bar (Top Right) -->
-        <div class="absolute top-4 right-4 z-[1000] flex flex-col gap-2 items-end">
+        <!-- Floating Map Mode Selector Bar (Top Right) -->
+        <div id="top-right-controls" class="absolute top-4 right-4 z-[1000] flex flex-col gap-2 items-end transition-all">
             <div class="glass-panel p-1.5 rounded-2xl shadow-2xl flex items-center gap-1.5 border border-slate-700/80 backdrop-blur-xl">
                 <button id="style-street" class="map-style-btn map-style-active glass-button px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 text-slate-200 hover:text-white transition-all">
                     <i class="fa-solid fa-map text-cyan-400"></i> Street
@@ -193,7 +195,7 @@
         </div>
 
         <!-- Floating My Location Button -->
-        <div class="absolute bottom-6 right-4 z-[1000] flex flex-col gap-2">
+        <div id="floating-loc-container" class="absolute bottom-6 right-4 z-[1000] flex flex-col gap-2">
             <button id="btn-floating-my-location" title="Center on My Location" class="glass-button w-12 h-12 rounded-2xl flex items-center justify-center text-cyan-400 hover:text-white shadow-2xl hover:scale-105 active:scale-95 transition-all border-cyan-500/40">
                 <i class="fa-solid fa-location-crosshairs text-lg"></i>
             </button>
@@ -311,62 +313,67 @@
         <!-- Left Routing & Search Control Overlay -->
         <div class="absolute top-4 left-4 right-4 md:right-auto md:w-96 z-[1000] flex flex-col gap-3">
             
-            <!-- Route Input Card -->
-            <div class="glass-panel rounded-2xl p-4 shadow-2xl space-y-3">
+            <!-- Route Input Card ("Where to?") - Hidden when Hide UI is toggled -->
+            <div id="where-to-card" class="glass-panel rounded-2xl p-4 shadow-2xl space-y-3 transition-all duration-300">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-800">
                     <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-diamond-turn-right text-cyan-400"></i> Directions Planner
+                        <i class="fa-solid fa-compass text-cyan-400"></i> Where to?
                     </span>
                     
-                    <!-- Driving vs Biking vs Walking Mode Switcher -->
-                    <div class="flex bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/70 text-xs">
-                        <button id="mode-driving" class="mode-btn px-2.5 py-1 rounded-md font-medium text-cyan-400 bg-slate-700 shadow flex items-center gap-1" data-mode="driving">
-                            <i class="fa-solid fa-car"></i> Drive
-                        </button>
-                        <button id="mode-biking" class="mode-btn px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1" data-mode="bike">
-                            <i class="fa-solid fa-bicycle"></i> Bike
-                        </button>
-                        <button id="mode-walking" class="mode-btn px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1" data-mode="foot">
-                            <i class="fa-solid fa-person-walking"></i> Walk
-                        </button>
+                    <div class="flex items-center gap-2">
+                        <!-- Driving vs Biking vs Walking Mode Switcher -->
+                        <div class="flex bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/70 text-xs">
+                            <button id="mode-driving" class="mode-btn px-2.5 py-1 rounded-md font-medium text-cyan-400 bg-slate-700 shadow flex items-center gap-1" data-mode="driving">
+                                <i class="fa-solid fa-car"></i> Drive
+                            </button>
+                            <button id="mode-biking" class="mode-btn px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1" data-mode="bike">
+                                <i class="fa-solid fa-bicycle"></i> Bike
+                            </button>
+                            <button id="mode-walking" class="mode-btn px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1" data-mode="foot">
+                                <i class="fa-solid fa-person-walking"></i> Walk
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Input A: Start Location -->
-                <div class="relative">
-                    <div class="flex items-center bg-slate-800/90 rounded-xl px-3 py-2 border border-slate-700/80 focus-within:border-emerald-500/80 transition-all">
-                        <i class="fa-solid fa-circle-dot text-emerald-500 mr-2.5 text-xs"></i>
-                        <input type="text" id="start-input" placeholder="Origin (search or click map)..." class="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none" autocomplete="off">
-                        <button id="btn-use-gps-start" title="Set my GPS location as start" class="text-slate-400 hover:text-cyan-400 p-1 ml-1 text-xs transition-colors flex items-center gap-1">
-                            <i class="fa-solid fa-location-crosshairs"></i>
-                            <span class="text-[10px] hidden sm:inline">My Location</span>
+                <!-- Collapsible content body -->
+                <div id="where-to-body" class="space-y-3">
+                    <!-- Input A: Start Location -->
+                    <div class="relative">
+                        <div class="flex items-center bg-slate-800/90 rounded-xl px-3 py-2 border border-slate-700/80 focus-within:border-emerald-500/80 transition-all">
+                            <i class="fa-solid fa-circle-dot text-emerald-500 mr-2.5 text-xs"></i>
+                            <input type="text" id="start-input" placeholder="Origin (search or click map)..." class="w-full bg-transparent text-base md:text-xs text-white placeholder-slate-400 focus:outline-none" autocomplete="off">
+                            <button id="btn-use-gps-start" title="Set my GPS location as start" class="text-slate-400 hover:text-cyan-400 p-1 ml-1 text-xs transition-colors flex items-center gap-1">
+                                <i class="fa-solid fa-location-crosshairs"></i>
+                                <span class="text-[10px] hidden sm:inline">GPS</span>
+                            </button>
+                        </div>
+                        <div id="start-results" class="hidden absolute left-0 right-0 top-full mt-1 glass-panel rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30 border border-slate-700/80"></div>
+                    </div>
+
+                    <!-- Input B: Destination Location -->
+                    <div class="relative">
+                        <div class="flex items-center bg-slate-800/90 rounded-xl px-3 py-2 border border-slate-700/80 focus-within:border-red-500/80 transition-all">
+                            <i class="fa-solid fa-location-dot text-red-500 mr-2.5 text-xs"></i>
+                            <input type="text" id="end-input" placeholder="Destination (search or click map)..." class="w-full bg-transparent text-base md:text-xs text-white placeholder-slate-400 focus:outline-none" autocomplete="off">
+                        </div>
+                        <div id="end-results" class="hidden absolute left-0 right-0 top-full mt-1 glass-panel rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30 border border-slate-700/80"></div>
+                    </div>
+
+                    <!-- Route Action Buttons -->
+                    <div class="flex gap-2 pt-1">
+                        <button id="btn-get-directions" class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs py-2.5 rounded-xl shadow-lg shadow-cyan-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-route"></i> Calculate Route
+                        </button>
+                        <button id="btn-clear-route" title="Clear route and markers" class="glass-button px-3 text-slate-400 hover:text-red-400 text-xs rounded-xl transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
-                    <div id="start-results" class="hidden absolute left-0 right-0 top-full mt-1 glass-panel rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30 border border-slate-700/80"></div>
-                </div>
-
-                <!-- Input B: Destination Location -->
-                <div class="relative">
-                    <div class="flex items-center bg-slate-800/90 rounded-xl px-3 py-2 border border-slate-700/80 focus-within:border-red-500/80 transition-all">
-                        <i class="fa-solid fa-location-dot text-red-500 mr-2.5 text-xs"></i>
-                        <input type="text" id="end-input" placeholder="Destination (search or click map)..." class="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none" autocomplete="off">
-                    </div>
-                    <div id="end-results" class="hidden absolute left-0 right-0 top-full mt-1 glass-panel rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30 border border-slate-700/80"></div>
-                </div>
-
-                <!-- Route Action Buttons -->
-                <div class="flex gap-2 pt-1">
-                    <button id="btn-get-directions" class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs py-2.5 rounded-xl shadow-lg shadow-cyan-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                        <i class="fa-solid fa-route"></i> Calculate Route
-                    </button>
-                    <button id="btn-clear-route" title="Clear route and markers" class="glass-button px-3 text-slate-400 hover:text-red-400 text-xs rounded-xl transition-colors">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
                 </div>
             </div>
 
-            <!-- Prominent Route ETA & Live Navigation Banner -->
-            <div id="prominent-eta-card" class="glass-panel rounded-2xl p-4 shadow-2xl hidden border-2 border-emerald-500/40 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-emerald-950/30">
+            <!-- Prominent Route ETA & Live Navigation Banner (Stays visible even when UI is hidden) -->
+            <div id="prominent-eta-card" class="glass-panel rounded-2xl p-4 shadow-2xl hidden border-2 border-emerald-500/40 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-emerald-950/30 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Optimal Route Found
@@ -377,7 +384,7 @@
                 </div>
 
                 <!-- Big High-Visibility Live Time Display -->
-                <div class="flex items-baseline justify-between">
+                <div id="eta-main-info-group" class="flex items-baseline justify-between transition-all">
                     <div>
                         <div id="eta-big-duration" class="text-3xl md:text-4xl font-extrabold text-emerald-400 tracking-tight leading-none">
                             -- min
@@ -439,9 +446,9 @@
     <script>
         // Global Map State Variables
         let map;
-        let selectedStart = null; // { lng, lat, name }
-        let selectedEnd = null;   // { lng, lat, name }
-        let travelMode = 'driving'; // 'driving', 'bike', or 'foot'
+        let selectedStart = null; 
+        let selectedEnd = null;   
+        let travelMode = 'driving'; 
 
         let startMarker = null;
         let endMarker = null;
@@ -454,7 +461,6 @@
 
         // Traffic Overlay State
         let isTrafficEnabled = false;
-        let trafficOverlayLayer = null;
 
         // REAL Live GPS Navigation State
         let isNavigating = false;
@@ -463,31 +469,27 @@
         let currentSteps = [];
         let activeStepIndex = 0;
 
+        // UI Visibility State
+        let isUiHidden = false;
+
         // App Settings Configuration
         let appSettings = {
             voiceGuidance: true,
             selectedVoiceURI: '',
             speedometer: true,
-            units: 'metric', // 'metric' or 'imperial'
+            units: 'metric', 
             autoCenter: true,
             audioChime: true
         };
 
-        // System Voices list
         let availableVoices = [];
-
-        // GPS & Location Tracking state
         let isGpsActive = false;
         let watchPositionId = null;
-        let userGpsPos = null; // { lng, lat, speed }
+        let userGpsPos = null; 
         let gpsUserMarker = null;
 
-        // Search Debouncing
         let startSearchDebounce = null;
         let endSearchDebounce = null;
-
-        // Audio synthesizer for audio chime
-        let audioCtx = null;
 
         window.onload = function () {
             initializeMap();
@@ -527,13 +529,9 @@
         }
 
         function initializeMap() {
-            // Initialize Leaflet Map centered on Hanover, ON
             map = L.map('map', { zoomControl: false }).setView([44.1501, -81.0261], 14);
-
-            // Add Zoom Control to top right
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // Tile layers
             tileLayers.street = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
                 attribution: 'Tiles &copy; Esri'
@@ -549,10 +547,8 @@
                 attribution: 'Source: Esri, Maxar, Earthstar Geographics'
             });
 
-            // Set default tile layer to Street Mode
             tileLayers.street.addTo(map);
 
-            // Update live coordinate tracker on mouse move
             map.on('mousemove', (e) => {
                 const lat = e.latlng.lat.toFixed(4);
                 const lng = Math.abs(e.latlng.lng).toFixed(4);
@@ -561,7 +557,6 @@
                 if (coordsVal) coordsVal.innerText = `${lat}° N, ${lng}° ${dir}`;
             });
 
-            // Map click handler to place Start and Destination points
             map.on('click', handleMapClick);
         }
 
@@ -612,761 +607,532 @@
             const chimeEl = document.getElementById('setting-chime');
             if (chimeEl) chimeEl.checked = appSettings.audioChime;
 
-            applySettingsUI();
-        }
-
-        function applySettingsUI() {
-            const spdWidget = document.getElementById('speedometer-widget');
-            if (spdWidget) {
-                if (appSettings.speedometer) {
-                    spdWidget.classList.remove('hidden');
-                } else {
-                    spdWidget.classList.add('hidden');
-                }
-            }
-
-            const unitLabel = document.getElementById('speed-unit');
-            if (unitLabel) unitLabel.innerText = appSettings.units === 'imperial' ? 'mph' : 'km/h';
+            const speedWidget = document.getElementById('speedometer-widget');
+            if (speedWidget) speedWidget.style.display = appSettings.speedometer ? 'flex' : 'none';
         }
 
         function saveSettings() {
-            const voiceEl = document.getElementById('setting-voice');
-            if (voiceEl) appSettings.voiceGuidance = voiceEl.checked;
-
-            const voiceSelectEl = document.getElementById('setting-voice-select');
-            if (voiceSelectEl) appSettings.selectedVoiceURI = voiceSelectEl.value;
-
-            const speedEl = document.getElementById('setting-speedometer');
-            if (speedEl) appSettings.speedometer = speedEl.checked;
-
-            const unitsEl = document.getElementById('setting-units');
-            if (unitsEl) appSettings.units = unitsEl.value;
-
-            const autoEl = document.getElementById('setting-autocenter');
-            if (autoEl) appSettings.autoCenter = autoEl.checked;
-
-            const chimeEl = document.getElementById('setting-chime');
-            if (chimeEl) appSettings.audioChime = chimeEl.checked;
+            appSettings.voiceGuidance = document.getElementById('setting-voice').checked;
+            appSettings.selectedVoiceURI = document.getElementById('setting-voice-select').value;
+            appSettings.speedometer = document.getElementById('setting-speedometer').checked;
+            appSettings.units = document.getElementById('setting-units').value;
+            appSettings.autoCenter = document.getElementById('setting-autocenter').checked;
+            appSettings.audioChime = document.getElementById('setting-chime').checked;
 
             localStorage.setItem('air_maps_settings', JSON.stringify(appSettings));
-            applySettingsUI();
 
-            const modal = document.getElementById('settings-modal');
-            if (modal) modal.classList.add('hidden');
-            showNotification("Navigation settings saved!");
+            const speedWidget = document.getElementById('speedometer-widget');
+            if (speedWidget) speedWidget.style.display = appSettings.speedometer ? 'flex' : 'none';
 
-            if (selectedStart && selectedEnd) {
-                calculateRoute();
-            }
+            document.getElementById('settings-modal').classList.add('hidden');
+            showNotification('Settings saved successfully!');
         }
 
         function setupEventListeners() {
-            // Map Style Switcher Buttons
-            const btnStreet = document.getElementById('style-street');
-            if (btnStreet) btnStreet.addEventListener('click', () => switchMapStyle('street'));
+            document.getElementById('style-street').addEventListener('click', () => switchMapStyle('street'));
+            document.getElementById('style-dark').addEventListener('click', () => switchMapStyle('dark'));
+            document.getElementById('style-satellite').addEventListener('click', () => switchMapStyle('satellite'));
 
-            const btnDark = document.getElementById('style-dark');
-            if (btnDark) btnDark.addEventListener('click', () => switchMapStyle('dark'));
+            document.getElementById('btn-open-settings-hdr').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.remove('hidden');
+            });
+            document.getElementById('btn-close-settings').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.add('hidden');
+            });
+            document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
 
-            const btnSat = document.getElementById('style-satellite');
-            if (btnSat) btnSat.addEventListener('click', () => switchMapStyle('satellite'));
+            document.getElementById('btn-toggle-gps').addEventListener('click', toggleGpsTracking);
+            document.getElementById('btn-floating-my-location').addEventListener('click', centerOnUserGps);
+            document.getElementById('btn-use-gps-start').addEventListener('click', setStartToCurrentGps);
+            document.getElementById('btn-toggle-traffic').addEventListener('click', toggleTrafficLayer);
 
-            // Settings Modal Open / Close / Save
-            const openSettings = () => {
-                const modal = document.getElementById('settings-modal');
-                if (modal) modal.classList.remove('hidden');
-            };
-            const closeSettings = () => {
-                const modal = document.getElementById('settings-modal');
-                if (modal) modal.classList.add('hidden');
-            };
+            // Hide/Show Global UI Toggle (Keeps ETA card visible)
+            document.getElementById('btn-toggle-hide-ui').addEventListener('click', () => {
+                isUiHidden = !isUiHidden;
+                const whereToCard = document.getElementById('where-to-card');
+                const topRight = document.getElementById('top-right-controls');
+                const directionsPanel = document.getElementById('directions-panel');
+                const icon = document.getElementById('hide-ui-icon');
+                const text = document.getElementById('hide-ui-text');
 
-            const btnOpenSet = document.getElementById('btn-open-settings-hdr');
-            if (btnOpenSet) btnOpenSet.addEventListener('click', openSettings);
+                if (isUiHidden) {
+                    whereToCard.classList.add('hidden');
+                    topRight.classList.add('hidden');
+                    directionsPanel.classList.add('hidden');
+                    icon.className = 'fa-solid fa-eye';
+                    text.innerText = 'Show UI';
+                    showNotification('UI hidden. ETA time and speedometer remain active.');
+                } else {
+                    whereToCard.classList.remove('hidden');
+                    topRight.classList.remove('hidden');
+                    icon.className = 'fa-solid fa-eye-slash';
+                    text.innerText = 'Hide UI';
+                    showNotification('UI restored.');
+                }
+            });
 
-            const btnCloseSet = document.getElementById('btn-close-settings');
-            if (btnCloseSet) btnCloseSet.addEventListener('click', closeSettings);
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.mode-btn').forEach(b => {
+                        b.classList.remove('text-cyan-400', 'bg-slate-700', 'shadow');
+                        b.classList.add('text-slate-400');
+                    });
+                    const target = e.currentTarget;
+                    target.classList.remove('text-slate-400');
+                    target.classList.add('text-cyan-400', 'bg-slate-700', 'shadow');
+                    travelMode = target.getAttribute('data-mode');
 
-            const btnSaveSet = document.getElementById('btn-save-settings');
-            if (btnSaveSet) btnSaveSet.addEventListener('click', saveSettings);
+                    const badge = document.getElementById('eta-travel-mode-badge');
+                    if (badge) badge.innerText = target.innerText.trim();
 
-            // Toggle Live Traffic Overlay
-            const btnTraffic = document.getElementById('btn-toggle-traffic');
-            if (btnTraffic) btnTraffic.addEventListener('click', toggleTrafficOverlay);
-
-            // Driving vs Biking vs Walking Mode Switcher
-            const modeDrive = document.getElementById('mode-driving');
-            if (modeDrive) modeDrive.addEventListener('click', function() { setTravelMode('driving', this); });
-
-            const modeBike = document.getElementById('mode-biking');
-            if (modeBike) modeBike.addEventListener('click', function() { setTravelMode('bike', this); });
-
-            const modeWalk = document.getElementById('mode-walking');
-            if (modeWalk) modeWalk.addEventListener('click', function() { setTravelMode('foot', this); });
-
-            // Search Inputs
-            const startInput = document.getElementById('start-input');
-            if (startInput) {
-                startInput.addEventListener('input', (e) => {
-                    clearTimeout(startSearchDebounce);
-                    startSearchDebounce = setTimeout(() => searchNominatim(e.target.value, 'start-results', setStartPoint), 300);
-                });
-            }
-
-            const endInput = document.getElementById('end-input');
-            if (endInput) {
-                endInput.addEventListener('input', (e) => {
-                    clearTimeout(endSearchDebounce);
-                    endSearchDebounce = setTimeout(() => searchNominatim(e.target.value, 'end-results', setEndPoint), 300);
-                });
-            }
-
-            const btnGetDir = document.getElementById('btn-get-directions');
-            if (btnGetDir) btnGetDir.addEventListener('click', calculateRoute);
-
-            const btnClearRoute = document.getElementById('btn-clear-route');
-            if (btnClearRoute) btnClearRoute.addEventListener('click', clearRoute);
-
-            const btnToggleSteps = document.getElementById('btn-toggle-turn-list');
-            if (btnToggleSteps) {
-                btnToggleSteps.addEventListener('click', () => {
-                    const dirPanel = document.getElementById('directions-panel');
-                    if (dirPanel) dirPanel.classList.toggle('hidden');
-                });
-            }
-
-            const btnCloseDir = document.getElementById('btn-close-directions');
-            if (btnCloseDir) {
-                btnCloseDir.addEventListener('click', () => {
-                    const dirPanel = document.getElementById('directions-panel');
-                    if (dirPanel) dirPanel.classList.add('hidden');
-                });
-            }
-
-            // Start Real Live GPS Navigation
-            const btnStartNav = document.getElementById('btn-start-navigation');
-            if (btnStartNav) btnStartNav.addEventListener('click', toggleLiveNavigation);
-
-            const btnToggleGps = document.getElementById('btn-toggle-gps');
-            if (btnToggleGps) btnToggleGps.addEventListener('click', toggleGpsMode);
-
-            const btnFloatLoc = document.getElementById('btn-floating-my-location');
-            if (btnFloatLoc) {
-                btnFloatLoc.addEventListener('click', () => {
-                    if (userGpsPos) {
-                        map.flyTo([userGpsPos.lat, userGpsPos.lng], 16);
-                    } else {
-                        startGpsTracking();
+                    if (selectedStart && selectedEnd) {
+                        calculateAndDisplayRoute();
                     }
                 });
-            }
-
-            const btnUseGpsStart = document.getElementById('btn-use-gps-start');
-            if (btnUseGpsStart) btnUseGpsStart.addEventListener('click', useGpsAsStart);
-        }
-
-        function toggleTrafficOverlay() {
-            if (isTrafficEnabled) {
-                if (trafficOverlayLayer && map.hasLayer(trafficOverlayLayer)) {
-                    map.removeLayer(trafficOverlayLayer);
-                }
-                isTrafficEnabled = false;
-                const txt = document.getElementById('traffic-status-text');
-                if (txt) txt.innerText = 'Traffic Layer';
-                const ico = document.getElementById('traffic-icon');
-                if (ico) ico.className = 'fa-solid fa-car-side text-amber-400';
-                showNotification("Traffic layer hidden.");
-            } else {
-                if (!trafficOverlayLayer) {
-                    trafficOverlayLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        opacity: 0.5,
-                        attribution: 'Traffic Flow Overlay'
-                    });
-                }
-                trafficOverlayLayer.addTo(map);
-                isTrafficEnabled = true;
-                const txt = document.getElementById('traffic-status-text');
-                if (txt) txt.innerText = 'Traffic On';
-                const ico = document.getElementById('traffic-icon');
-                if (ico) ico.className = 'fa-solid fa-car-side text-emerald-400 animate-pulse';
-                showNotification("Live Traffic Layer activated!");
-            }
-        }
-
-        function setTravelMode(mode, el) {
-            travelMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.className = 'mode-btn px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1';
             });
-            el.className = 'mode-btn px-2.5 py-1 rounded-md font-medium text-cyan-400 bg-slate-700 shadow flex items-center gap-1';
 
-            const badge = document.getElementById('eta-travel-mode-badge');
-            if (badge) badge.innerText = mode === 'foot' ? 'walk' : mode;
+            document.getElementById('start-input').addEventListener('input', (e) => {
+                clearTimeout(startSearchDebounce);
+                const q = e.target.value.trim();
+                if (q.length < 2) {
+                    document.getElementById('start-results').classList.add('hidden');
+                    return;
+                }
+                startSearchDebounce = setTimeout(() => searchNominatim(q, 'start'), 300);
+            });
 
-            if (selectedStart && selectedEnd) {
-                calculateRoute();
-            }
+            document.getElementById('end-input').addEventListener('input', (e) => {
+                clearTimeout(endSearchDebounce);
+                const q = e.target.value.trim();
+                if (q.length < 2) {
+                    document.getElementById('end-results').classList.add('hidden');
+                    return;
+                }
+                endSearchDebounce = setTimeout(() => searchNominatim(q, 'end'), 300);
+            });
+
+            document.getElementById('btn-get-directions').addEventListener('click', () => {
+                if (!selectedStart || !selectedEnd) {
+                    showNotification('Please select both Origin and Destination.', 'error');
+                    return;
+                }
+                calculateAndDisplayRoute();
+            });
+
+            document.getElementById('btn-clear-route').addEventListener('click', clearRouteAndMarkers);
+            document.getElementById('btn-close-directions').addEventListener('click', () => {
+                document.getElementById('directions-panel').classList.add('hidden');
+            });
+            document.getElementById('btn-toggle-turn-list').addEventListener('click', () => {
+                const panel = document.getElementById('directions-panel');
+                panel.classList.toggle('hidden');
+            });
+            document.getElementById('btn-start-navigation').addEventListener('click', toggleLiveNavigation);
+        }
+
+        function searchNominatim(query, type) {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const containerId = type === 'start' ? 'start-results' : 'end-results';
+                    const container = document.getElementById(containerId);
+                    container.innerHTML = '';
+
+                    if (!data || data.length === 0) {
+                        container.classList.add('hidden');
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'px-3 py-2 text-xs hover:bg-slate-800 cursor-pointer border-b border-slate-800/60 truncate flex items-center gap-2';
+                        div.innerHTML = `<i class="fa-solid fa-location-dot text-cyan-400"></i> <span class="truncate">${item.display_name}</span>`;
+                        div.addEventListener('click', () => {
+                            const coords = { lng: parseFloat(item.lon), lat: parseFloat(item.lat), name: item.display_name };
+                            if (type === 'start') {
+                                selectedStart = coords;
+                                document.getElementById('start-input').value = item.display_name;
+                                updateStartMarker([coords.lat, coords.lng], item.display_name);
+                            } else {
+                                selectedEnd = coords;
+                                document.getElementById('end-input').value = item.display_name;
+                                updateEndMarker([coords.lat, coords.lng], item.display_name);
+                            }
+                            container.classList.add('hidden');
+                            if (selectedStart && selectedEnd) {
+                                calculateAndDisplayRoute();
+                            }
+                        });
+                        container.appendChild(div);
+                    });
+                    container.classList.remove('hidden');
+                })
+                .catch(err => console.warn('Nominatim search error:', err));
         }
 
         function handleMapClick(e) {
-            const lat = e.latlng.lat;
-            const lng = e.latlng.lng;
-
-            if (!selectedStart) {
-                setStartPoint(lng, lat, `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-            } else if (!selectedEnd) {
-                setEndPoint(lng, lat, `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-            } else {
-                setEndPoint(lng, lat, `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-            }
-        }
-
-        function setStartPoint(lng, lat, name) {
-            selectedStart = { lng, lat, name };
-            const input = document.getElementById('start-input');
-            if (input) input.value = name;
-
-            const results = document.getElementById('start-results');
-            if (results) results.classList.add('hidden');
-
-            if (startMarker) map.removeLayer(startMarker);
-
-            const startIcon = L.divIcon({
-                className: 'custom-pin-marker',
-                html: '<i class="fa-solid fa-circle-dot text-emerald-500 drop-shadow-md"></i>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-
-            startMarker = L.marker([lat, lng], { icon: startIcon }).addTo(map)
-                .bindPopup(`<b class="text-emerald-400">Start:</b> ${name}`);
-
-            if (selectedEnd) {
-                calculateRoute();
-            } else {
-                map.panTo([lat, lng]);
-            }
-        }
-
-        function setEndPoint(lng, lat, name) {
-            selectedEnd = { lng, lat, name };
-            const input = document.getElementById('end-input');
-            if (input) input.value = name;
-
-            const results = document.getElementById('end-results');
-            if (results) results.classList.add('hidden');
-
-            if (endMarker) map.removeLayer(endMarker);
-
-            const endIcon = L.divIcon({
-                className: 'custom-pin-marker',
-                html: '<i class="fa-solid fa-location-dot text-red-500 drop-shadow-md"></i>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
-            });
-
-            endMarker = L.marker([lat, lng], { icon: endIcon }).addTo(map)
-                .bindPopup(`<b class="text-red-400">Destination:</b> ${name}`);
-
-            if (selectedStart) {
-                calculateRoute();
-            } else {
-                map.panTo([lat, lng]);
-            }
-        }
-
-        function useGpsAsStart() {
-            if (userGpsPos) {
-                setStartPoint(userGpsPos.lng, userGpsPos.lat, "My GPS Location");
-                showNotification("Set Origin to current GPS coordinates.");
-            } else {
-                showNotification("Detecting GPS position...", false);
-                startGpsTracking(() => {
-                    if (userGpsPos) {
-                        setStartPoint(userGpsPos.lng, userGpsPos.lat, "My GPS Location");
-                    }
-                });
-            }
-        }
-
-        function searchNominatim(query, containerId, selectCallback) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            if (!query || query.trim().length < 2) {
-                container.classList.add('hidden');
-                container.innerHTML = '';
-                return;
-            }
-
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+            const { lat, lng } = e.latlng;
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
                 .then(res => res.json())
                 .then(data => {
-                    container.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            const div = document.createElement('div');
-                            div.className = 'p-2.5 hover:bg-slate-800/90 cursor-pointer border-b border-slate-800 text-xs text-slate-200 transition-colors flex items-center gap-2';
-                            div.innerHTML = `<i class="fa-solid fa-location-dot text-cyan-400 shrink-0"></i> <span class="truncate">${item.display_name}</span>`;
-                            div.onclick = () => {
-                                selectCallback(parseFloat(item.lon), parseFloat(item.lat), item.display_name.split(',')[0]);
-                                container.classList.add('hidden');
-                            };
-                            container.appendChild(div);
-                        });
-                        container.classList.remove('hidden');
+                    const placeName = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    if (!selectedStart) {
+                        selectedStart = { lng, lat, name: placeName };
+                        document.getElementById('start-input').value = placeName;
+                        updateStartMarker([lat, lng], placeName);
+                        showNotification('Origin point set.');
+                    } else if (!selectedEnd) {
+                        selectedEnd = { lng, lat, name: placeName };
+                        document.getElementById('end-input').value = placeName;
+                        updateEndMarker([lat, lng], placeName);
+                        showNotification('Destination point set.');
+                        calculateAndDisplayRoute();
                     } else {
-                        container.innerHTML = `<div class="p-2.5 text-xs text-slate-400 italic text-center">No locations found</div>`;
-                        container.classList.remove('hidden');
+                        selectedEnd = { lng, lat, name: placeName };
+                        document.getElementById('end-input').value = placeName;
+                        updateEndMarker([lat, lng], placeName);
+                        calculateAndDisplayRoute();
                     }
                 })
-                .catch(err => {
-                    console.warn("Search error:", err);
+                .catch(() => {
+                    const placeName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    if (!selectedStart) {
+                        selectedStart = { lng, lat, name: placeName };
+                        document.getElementById('start-input').value = placeName;
+                        updateStartMarker([lat, lng], placeName);
+                    } else {
+                        selectedEnd = { lng, lat, name: placeName };
+                        document.getElementById('end-input').value = placeName;
+                        updateEndMarker([lat, lng], placeName);
+                        calculateAndDisplayRoute();
+                    }
                 });
         }
 
-        function calculateRoute() {
-            if (!selectedStart || !selectedEnd) {
-                showNotification("Please select both Origin and Destination points.", true);
-                return;
-            }
+        function updateStartMarker(latlng, title) {
+            if (startMarker) map.removeLayer(startMarker);
+            const icon = L.divIcon({
+                className: 'custom-start-marker',
+                html: `<div style="background:#10b981; width:26px; height:26px; border-radius:50%; border:3px solid white; box-shadow:0 0 12px rgba(16,185,129,0.8); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-circle-dot" style="font-size:10px; color:white;"></i></div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+            startMarker = L.marker(latlng, { icon }).addTo(map).bindPopup(`<b>Origin:</b> ${title}`);
+            map.setView(latlng, 15);
+        }
 
-            showNotification("Routing via OSRM engine...");
+        function updateEndMarker(latlng, title) {
+            if (endMarker) map.removeLayer(endMarker);
+            const icon = L.divIcon({
+                className: 'custom-end-marker',
+                html: `<div style="background:#ef4444; width:26px; height:26px; border-radius:50%; border:3px solid white; box-shadow:0 0 12px rgba(239,68,68,0.8); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-location-dot" style="font-size:10px; color:white;"></i></div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 26]
+            });
+            endMarker = L.marker(latlng, { icon }).addTo(map).bindPopup(`<b>Destination:</b> ${title}`);
+        }
 
-            const osrmProfile = travelMode === 'bike' ? 'bike' : (travelMode === 'foot' ? 'foot' : 'driving');
-            const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${selectedStart.lng},${selectedStart.lat};${selectedEnd.lng},${selectedEnd.lat}?overview=full&geometries=geojson&steps=true`;
+        function calculateAndDisplayRoute() {
+            if (!selectedStart || !selectedEnd) return;
+            const url = `https://router.project-osrm.org/route/v1/${travelMode}/${selectedStart.lng},${selectedStart.lat};${selectedEnd.lng},${selectedEnd.lat}?overview=full&geometries=geojson&steps=true`;
 
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-                        const route = data.routes[0];
-                        renderDirections(route);
-                    } else {
-                        showNotification("Could not calculate route between selected points.", true);
+                    if (!data.routes || data.routes.length === 0) {
+                        showNotification('No navigable route found.', 'error');
+                        return;
                     }
+
+                    const route = data.routes[0];
+                    currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                    currentSteps = route.legs[0].steps || [];
+
+                    if (routeCasingPolyline) map.removeLayer(routeCasingPolyline);
+                    if (routePolyline) map.removeLayer(routePolyline);
+
+                    routeCasingPolyline = L.polyline(currentRouteCoords, { color: '#0369a1', weight: 8, opacity: 0.8 }).addTo(map);
+                    routePolyline = L.polyline(currentRouteCoords, { color: '#38bdf8', weight: 4, opacity: 1 }).addTo(map);
+
+                    map.fitBounds(routePolyline.getBounds(), { padding: [60, 60] });
+
+                    updateRouteSummaryCard(route.duration, route.distance);
+                    populateTurnInstructions(currentSteps);
                 })
                 .catch(err => {
-                    console.error("OSRM Route Error:", err);
-                    showNotification("Failed to fetch route. Check network connection.", true);
+                    console.error('OSRM Route fetching error:', err);
+                    showNotification('Failed to calculate route.', 'error');
                 });
         }
 
-        function renderDirections(routeData) {
-            // Remove existing route polylines
-            if (routePolyline) map.removeLayer(routePolyline);
-            if (routeCasingPolyline) map.removeLayer(routeCasingPolyline);
+        function updateRouteSummaryCard(durationSecs, distanceMeters) {
+            const card = document.getElementById('prominent-eta-card');
+            const durationEl = document.getElementById('eta-big-duration');
+            const clockEl = document.getElementById('eta-clock-val');
+            const distEl = document.getElementById('eta-distance-val');
+            const statsEl = document.getElementById('route-stats');
 
-            currentRouteCoords = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
-            currentSteps = routeData.legs[0].steps || [];
+            const mins = Math.round(durationSecs / 60);
+            durationEl.innerText = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} hr ${mins % 60} min`;
 
-            // Draw polyline casing for outline contrast
-            routeCasingPolyline = L.polyline(currentRouteCoords, {
-                color: '#0284c7',
-                weight: 9,
-                opacity: 0.8,
-                lineCap: 'round',
-                lineJoin: 'round'
-            }).addTo(map);
+            const arrivalTime = new Date(Date.now() + durationSecs * 1000);
+            clockEl.innerText = arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Draw main bright blue route line
-            routePolyline = L.polyline(currentRouteCoords, {
-                color: '#38bdf8',
-                weight: 5,
-                opacity: 1,
-                lineCap: 'round',
-                lineJoin: 'round'
-            }).addTo(map);
-
-            map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
-
-            // Stats calculation
-            const distKm = (routeData.distance / 1000);
-            const distVal = appSettings.units === 'imperial' ? (distKm * 0.621371).toFixed(1) + ' mi' : distKm.toFixed(1) + ' km';
-            
-            const durationMins = Math.round(routeData.duration / 60);
-            const hours = Math.floor(durationMins / 60);
-            const mins = durationMins % 60;
-            const durationText = hours > 0 ? `${hours} hr ${mins} min` : `${mins} min`;
-
-            // Calculate Arrival Clock Time
-            const now = new Date();
-            now.setMinutes(now.getMinutes() + durationMins);
-            const arrivalTimeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            // Update Prominent ETA Card UI
-            const etaCard = document.getElementById('prominent-eta-card');
-            if (etaCard) etaCard.classList.remove('hidden');
-
-            const bigDuration = document.getElementById('eta-big-duration');
-            if (bigDuration) bigDuration.innerText = durationText;
-
-            const clockVal = document.getElementById('eta-clock-val');
-            if (clockVal) clockVal.innerText = arrivalTimeString;
-
-            const distValEl = document.getElementById('eta-distance-val');
-            if (distValEl) distValEl.innerText = distVal;
-
-            // Populate Turn-by-Turn step list
-            const stepsList = document.getElementById('turn-instructions-list');
-            if (stepsList) {
-                stepsList.innerHTML = '';
-                currentSteps.forEach((step, idx) => {
-                    const stepDistMeters = step.distance;
-                    const stepDistText = appSettings.units === 'imperial' 
-                        ? (stepDistMeters * 3.28084 < 1000 ? Math.round(stepDistMeters * 3.28084) + ' ft' : (stepDistMeters * 0.000621371).toFixed(1) + ' mi')
-                        : (stepDistMeters < 1000 ? Math.round(stepDistMeters) + ' m' : (stepDistMeters / 1000).toFixed(1) + ' km');
-
-                    const iconClass = getStepIconClass(step.maneuver);
-                    const stepText = getStepText(step);
-
-                    const div = document.createElement('div');
-                    div.className = 'p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-start gap-3 text-slate-200';
-                    div.innerHTML = `
-                        <div class="w-7 h-7 rounded-lg bg-slate-700 border border-slate-600 flex items-center justify-center text-cyan-400 shrink-0 text-xs font-bold mt-0.5">
-                            <i class="${iconClass}"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="font-semibold text-slate-100">${stepText}</div>
-                            <div class="text-[11px] text-cyan-400 font-medium">${stepDistText}</div>
-                        </div>
-                    `;
-                    stepsList.appendChild(div);
-                });
+            let distStr = '';
+            if (appSettings.units === 'imperial') {
+                const miles = (distanceMeters * 0.000621371).toFixed(1);
+                distStr = `${miles} mi`;
+            } else {
+                distStr = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} km` : `${Math.round(distanceMeters)} m`;
             }
 
-            const statsEl = document.getElementById('route-stats');
-            if (statsEl) statsEl.innerText = `${distVal} • ${durationText}`;
-
-            showNotification(`Route calculated! Total distance: ${distVal}`);
+            distEl.innerText = distStr;
+            statsEl.innerText = `${distStr} • ${mins} mins`;
+            card.classList.remove('hidden');
         }
 
-        function getStepIconClass(maneuver) {
-            if (!maneuver) return 'fa-solid fa-arrow-up';
-            const type = maneuver.type;
-            const modifier = maneuver.modifier || '';
+        function populateTurnInstructions(steps) {
+            const listContainer = document.getElementById('turn-instructions-list');
+            listContainer.innerHTML = '';
 
-            if (type === 'depart') return 'fa-solid fa-play text-emerald-400';
-            if (type === 'arrive') return 'fa-solid fa-flag-checkered text-red-400';
-            if (modifier.includes('right')) return 'fa-solid fa-arrow-right-long';
-            if (modifier.includes('left')) return 'fa-solid fa-arrow-left-long';
-            if (modifier.includes('straight')) return 'fa-solid fa-arrow-up';
+            steps.forEach((step, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-800/80 transition-colors border-b border-slate-800/50';
+                
+                let iconClass = 'fa-arrow-up text-cyan-400';
+                const modifier = step.maneuver.modifier || '';
+                const type = step.maneuver.type || '';
 
-            return 'fa-solid fa-diamond-turn-right';
-        }
+                if (modifier.includes('left')) iconClass = 'fa-arrow-turn-left text-amber-400';
+                else if (modifier.includes('right')) iconClass = 'fa-arrow-turn-right text-emerald-400';
+                else if (type.includes('arrive')) iconClass = 'fa-flag-checkered text-red-400';
 
-        function getStepText(step) {
-            if (!step || !step.maneuver) return 'Continue on route';
-            const m = step.maneuver;
-            const streetName = step.name ? `onto <b class="text-cyan-300">${step.name}</b>` : '';
+                const distText = step.distance > 0 ? (appSettings.units === 'imperial' ? `${(step.distance * 0.000621371).toFixed(1)} mi` : `${Math.round(step.distance)}m`) : '';
 
-            if (m.type === 'depart') return `Head ${m.modifier || 'forward'} ${streetName}`;
-            if (m.type === 'arrive') return `Arrive at destination`;
-            if (m.type === 'turn') return `Turn ${m.modifier || ''} ${streetName}`;
-            if (m.type === 'new name') return `Continue ${streetName}`;
-
-            return `Proceed ${m.modifier || ''} ${streetName}`;
-        }
-
-        function clearRoute() {
-            stopLiveNavigation();
-            selectedStart = null;
-            selectedEnd = null;
-
-            if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
-            if (endMarker) { map.removeLayer(endMarker); endMarker = null; }
-            if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
-            if (routeCasingPolyline) { map.removeLayer(routeCasingPolyline); routeCasingPolyline = null; }
-
-            const startIn = document.getElementById('start-input');
-            if (startIn) startIn.value = '';
-
-            const endIn = document.getElementById('end-input');
-            if (endIn) endIn.value = '';
-
-            const etaCard = document.getElementById('prominent-eta-card');
-            if (etaCard) etaCard.classList.add('hidden');
-
-            const dirPanel = document.getElementById('directions-panel');
-            if (dirPanel) dirPanel.classList.add('hidden');
-
-            showNotification("Route and markers cleared.");
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid ${iconClass} text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-slate-200 font-medium">${step.maneuver.instruction || 'Continue'}</div>
+                        <div class="text-[10px] text-slate-400">${distText}</div>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
         }
 
         function toggleLiveNavigation() {
-            if (isNavigating) {
-                stopLiveNavigation();
-            } else {
-                startLiveNavigation();
-            }
-        }
-
-        function startLiveNavigation() {
-            if (!currentRouteCoords || currentRouteCoords.length < 2) {
-                showNotification("Please calculate a route before starting live navigation.", true);
-                return;
-            }
-
-            if (!navigator.geolocation) {
-                showNotification("Geolocation API is not supported on this browser.", true);
-                return;
-            }
-
-            isNavigating = true;
-            activeStepIndex = 0;
-
-            const navBtnText = document.getElementById('nav-btn-text');
-            if (navBtnText) navBtnText.innerText = 'Stop Navigation';
-
-            const btnStartNav = document.getElementById('btn-start-navigation');
-            if (btnStartNav) btnStartNav.className = 'flex-1 bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 rounded-xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]';
-
-            showNotification("📡 Live GPS Turn-by-Turn Navigation active!");
-            if (appSettings.voiceGuidance) {
-                speakGuidance("Starting live navigation. Follow the highlighted route.");
-            }
-
-            const geoOptions = {
-                enableHighAccuracy: true,
-                maximumAge: 1000,
-                timeout: 15000
-            };
-
-            liveNavWatchId = navigator.geolocation.watchPosition(handleLiveNavPosition, handleLiveNavError, geoOptions);
-        }
-
-        function handleLiveNavPosition(pos) {
-            if (!isNavigating) return;
-
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const speedMps = pos.coords.speed || 0; // m/s
-
-            userGpsPos = { lat, lng, speed: speedMps };
-
-            // Update user position marker on map
-            updateGpsMarker(lat, lng);
-
-            // Update live speed display based on chosen unit
-            let displaySpeed = 0;
-            if (appSettings.units === 'imperial') {
-                displaySpeed = Math.round(speedMps * 2.23694); // m/s to mph
-            } else {
-                displaySpeed = Math.round(speedMps * 3.6); // m/s to km/h
-            }
-            const spdVal = document.getElementById('speed-val');
-            if (spdVal) spdVal.innerText = displaySpeed;
-
-            // Auto-recenter map view if enabled
-            if (appSettings.autoCenter) {
-                map.panTo([lat, lng], { animate: true });
-            }
-
-            // Check proximity to upcoming route step maneuvers
-            if (currentSteps && currentSteps.length > activeStepIndex) {
-                const nextStep = currentSteps[activeStepIndex];
-                if (nextStep && nextStep.maneuver && nextStep.maneuver.location) {
-                    const stepLat = nextStep.maneuver.location[1];
-                    const stepLng = nextStep.maneuver.location[0];
-                    const distMeters = getDistanceInMeters(lat, lng, stepLat, stepLng);
-
-                    if (distMeters <= 35) {
-                        playChimeSound();
-                        const turnText = getStepText(nextStep);
-                        if (appSettings.voiceGuidance) {
-                            speakGuidance(turnText);
-                        }
-                        showNotification(`Nav Turn: ${turnText}`);
-                        activeStepIndex++;
-                    }
+            if (!isNavigating) {
+                if (currentRouteCoords.length === 0) {
+                    showNotification('Please calculate a route first.', 'error');
+                    return;
                 }
-            }
-        }
+                isNavigating = true;
+                activeStepIndex = 0;
+                
+                document.getElementById('where-to-card').classList.add('hidden');
 
-        function handleLiveNavError(err) {
-            console.warn("Live navigation GPS error:", err);
-            showNotification("Acquiring accurate live GPS position...", false);
+                document.getElementById('nav-btn-text').innerText = 'End Navigation';
+                document.getElementById('btn-start-navigation').classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                document.getElementById('btn-start-navigation').classList.add('bg-rose-600', 'hover:bg-rose-500');
+                showNotification('Live Turn-by-Turn Navigation Started!');
+
+                if (appSettings.voiceGuidance && currentSteps.length > 0) {
+                    speakInstruction(`Starting navigation. ${currentSteps[0].maneuver.instruction}`);
+                }
+                startLiveNavTracking();
+            } else {
+                stopLiveNavigation();
+            }
         }
 
         function stopLiveNavigation() {
             isNavigating = false;
-            if (liveNavWatchId !== null) {
-                navigator.geolocation.clearWatch(liveNavWatchId);
-                liveNavWatchId = null;
-            }
+            
+            document.getElementById('where-to-card').classList.remove('hidden');
 
-            const navBtnText = document.getElementById('nav-btn-text');
-            if (navBtnText) navBtnText.innerText = 'Start Live Navigation';
-
-            const navBtn = document.getElementById('btn-start-navigation');
-            if (navBtn) {
-                navBtn.className = 'flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]';
-            }
-
-            const spdVal = document.getElementById('speed-val');
-            if (spdVal) spdVal.innerText = '0';
-
-            showNotification("Live Navigation stopped.");
+            document.getElementById('nav-btn-text').innerText = 'Start Live Navigation';
+            document.getElementById('btn-start-navigation').classList.remove('bg-rose-600', 'hover:bg-rose-500');
+            document.getElementById('btn-start-navigation').classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            showNotification('Navigation ended.');
         }
 
-        function speakGuidance(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text.replace(/<[^>]*>?/gm, ''));
-                
-                if (appSettings.selectedVoiceURI && availableVoices.length > 0) {
-                    const matchedVoice = availableVoices.find(v => v.voiceURI === appSettings.selectedVoiceURI);
-                    if (matchedVoice) {
-                        utterance.voice = matchedVoice;
-                    }
-                }
+        function startLiveNavTracking() {
+            if (!navigator.geolocation) return;
+            if (liveNavWatchId) navigator.geolocation.clearWatch(liveNavWatchId);
 
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                window.speechSynthesis.speak(utterance);
+            liveNavWatchId = navigator.geolocation.watchPosition((pos) => {
+                if (!isNavigating) return;
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                if (appSettings.autoCenter) {
+                    map.setView([lat, lng], 17);
+                }
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function speakInstruction(text) {
+            if (!appSettings.voiceGuidance || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (appSettings.selectedVoiceURI) {
+                const v = availableVoices.find(voice => voice.voiceURI === appSettings.selectedVoiceURI);
+                if (v) utterance.voice = v;
+            }
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleGpsTracking() {
+            if (!isGpsActive) {
+                if (!navigator.geolocation) {
+                    showNotification('Geolocation not supported by browser', 'error');
+                    return;
+                }
+                isGpsActive = true;
+                document.getElementById('gps-status-text').innerText = 'GPS Active';
+                document.getElementById('gps-icon').className = 'fa-solid fa-crosshairs text-cyan-400 animate-spin';
+                showNotification('GPS Location tracking activated');
+
+                watchPositionId = navigator.geolocation.watchPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const speedMs = pos.coords.speed || 0;
+                    const speedVal = appSettings.units === 'imperial' ? Math.round(speedMs * 2.23694) : Math.round(speedMs * 3.6);
+
+                    userGpsPos = { lat, lng, speed: speedVal };
+                    updateUserGpsMarker([lat, lng]);
+
+                    const speedEl = document.getElementById('speed-val');
+                    const unitEl = document.getElementById('speed-unit');
+                    if (speedEl) speedEl.innerText = speedVal;
+                    if (unitEl) unitEl.innerText = appSettings.units === 'imperial' ? 'mph' : 'km/h';
+                }, (err) => {
+                    console.warn("GPS tracking error:", err);
+                    showNotification('Unable to retrieve GPS signal.', 'error');
+                }, { enableHighAccuracy: true, maximumAge: 2000 });
+            } else {
+                isGpsActive = false;
+                if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
+                document.getElementById('gps-status-text').innerText = 'GPS Off';
+                document.getElementById('gps-icon').className = 'fa-solid fa-crosshairs text-slate-400';
+                if (gpsUserMarker) map.removeLayer(gpsUserMarker);
+                gpsUserMarker = null;
+                showNotification('GPS tracking deactivated');
             }
         }
 
-        function playChimeSound() {
-            if (!appSettings.audioChime) return;
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            } catch(e) {
-                console.warn("Audio chime error:", e);
+        function updateUserGpsMarker(latlng) {
+            if (gpsUserMarker) {
+                gpsUserMarker.setLatLng(latlng);
+            } else {
+                const icon = L.divIcon({
+                    className: 'gps-user-marker-container',
+                    html: '<div class="gps-user-marker"></div>',
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+                gpsUserMarker = L.marker(latlng, { icon }).addTo(map);
             }
+        }
+
+        function centerOnUserGps() {
+            if (userGpsPos) {
+                map.setView([userGpsPos.lat, userGpsPos.lng], 16);
+                showNotification('Centered on your live GPS position.');
+            } else {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    userGpsPos = { lat, lng };
+                    map.setView([lat, lng], 16);
+                    updateUserGpsMarker([lat, lng]);
+                    showNotification('Centered on your live GPS position.');
+                }, () => {
+                    showNotification('GPS location not available yet.', 'error');
+                }, { enableHighAccuracy: true });
+            }
+        }
+
+        function setStartToCurrentGps() {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const placeName = data.display_name || 'My Current GPS Location';
+                        selectedStart = { lng, lat, name: placeName };
+                        document.getElementById('start-input').value = placeName;
+                        updateStartMarker([lat, lng], placeName);
+                        showNotification('Origin set to your GPS location.');
+                        if (selectedStart && selectedEnd) calculateAndDisplayRoute();
+                    });
+            }, () => {
+                showNotification('Could not acquire GPS position.', 'error');
+            }, { enableHighAccuracy: true });
         }
 
         function detectInitialUserLocation() {
             if (navigator.geolocation) {
-                startGpsTracking();
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    userGpsPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                }, () => {}, { maximumAge: 10000 });
             }
         }
 
-        function toggleGpsMode() {
-            if (isGpsActive) {
-                stopGpsTracking();
+        function toggleTrafficLayer() {
+            isTrafficEnabled = !isTrafficEnabled;
+            const icon = document.getElementById('traffic-icon');
+
+            if (isTrafficEnabled) {
+                icon.className = 'fa-solid fa-car-side text-emerald-400 animate-pulse';
+                showNotification('Live traffic simulation active (Normal Flow)');
             } else {
-                startGpsTracking();
+                icon.className = 'fa-solid fa-car-side text-amber-400';
+                showNotification('Traffic layer disabled');
             }
         }
 
-        function startGpsTracking(callback) {
-            if (!navigator.geolocation) {
-                showNotification("Geolocation API not supported.", true);
-                return;
-            }
+        function clearRouteAndMarkers() {
+            selectedStart = null;
+            selectedEnd = null;
+            document.getElementById('start-input').value = '';
+            document.getElementById('end-input').value = '';
 
-            isGpsActive = true;
-            const gpsTxt = document.getElementById('gps-status-text');
-            if (gpsTxt) gpsTxt.innerText = 'GPS On';
-            const gpsIco = document.getElementById('gps-icon');
-            if (gpsIco) gpsIco.className = 'fa-solid fa-crosshairs text-cyan-400 animate-spin';
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            if (routePolyline) map.removeLayer(routePolyline);
+            if (routeCasingPolyline) map.removeLayer(routeCasingPolyline);
 
-            watchPositionId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    const speed = pos.coords.speed || 0;
-                    userGpsPos = { lat, lng, speed };
+            startMarker = null;
+            endMarker = null;
+            routePolyline = null;
+            routeCasingPolyline = null;
 
-                    updateGpsMarker(lat, lng);
+            document.getElementById('prominent-eta-card').classList.add('hidden');
+            document.getElementById('directions-panel').classList.add('hidden');
+            if (isNavigating) stopLiveNavigation();
 
-                    if (gpsIco) gpsIco.className = 'fa-solid fa-crosshairs text-cyan-400';
-
-                    if (callback) {
-                        callback(userGpsPos);
-                        callback = null;
-                    }
-                },
-                (err) => {
-                    console.warn("GPS tracking error:", err);
-                    showNotification("Unable to retrieve high-accuracy GPS signal.", true);
-                    if (gpsIco) gpsIco.className = 'fa-solid fa-crosshairs text-slate-400';
-                },
-                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-            );
+            showNotification('Route cleared.');
         }
 
-        function stopGpsTracking() {
-            isGpsActive = false;
-            if (watchPositionId !== null) {
-                navigator.geolocation.clearWatch(watchPositionId);
-                watchPositionId = null;
-            }
-
-            const gpsTxt = document.getElementById('gps-status-text');
-            if (gpsTxt) gpsTxt.innerText = 'GPS Off';
-            const gpsIco = document.getElementById('gps-icon');
-            if (gpsIco) gpsIco.className = 'fa-solid fa-crosshairs text-slate-400';
-
-            showNotification("GPS tracking disabled.");
-        }
-
-        function updateGpsMarker(lat, lng) {
-            if (gpsUserMarker) {
-                gpsUserMarker.setLatLng([lat, lng]);
-            } else {
-                const userIcon = L.divIcon({
-                    className: 'gps-user-marker',
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 11]
-                });
-                gpsUserMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map)
-                    .bindPopup("<b class='text-cyan-400'>Your Location</b>");
-            }
-        }
-
-        function getDistanceInMeters(lat1, lon1, lat2, lon2) {
-            const R = 6371000; // Radius of Earth in meters
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        function showNotification(msg, isError = false) {
+        function showNotification(msg, type = 'info') {
             const container = document.getElementById('toast-container');
-            if (!container) return;
-
             const toast = document.createElement('div');
-            toast.className = `pointer-events-auto px-4 py-2.5 rounded-2xl glass-panel shadow-2xl text-xs font-semibold flex items-center gap-2.5 border transition-all duration-300 transform translate-y-2 opacity-0 ${
-                isError ? 'border-red-500/50 text-red-200' : 'border-cyan-500/50 text-cyan-200'
-            }`;
-            toast.innerHTML = `
-                <i class="fa-solid ${isError ? 'fa-circle-exclamation text-red-400' : 'fa-circle-info text-cyan-400'}"></i>
-                <span>${msg}</span>
-            `;
+            const bgClass = type === 'error' ? 'bg-rose-950/90 border-rose-500/50 text-rose-200' : 'bg-slate-900/90 border-cyan-500/40 text-cyan-200';
+            const iconClass = type === 'error' ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-info text-cyan-400';
+
+            toast.className = `glass-panel px-4 py-3 rounded-2xl shadow-2xl border ${bgClass} text-xs flex items-center gap-3 pointer-events-auto transition-all animate-fade-in`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass} text-sm"></i><span class="font-medium">${msg}</span>`;
 
             container.appendChild(toast);
-
             setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
-            }, 3500);
+            }, 3000);
         }
     </script>
 </body>
